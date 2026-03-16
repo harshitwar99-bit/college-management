@@ -1,0 +1,28 @@
+# Cross-platform line ending normalization
+# Ensures Windows CRLF files are stored as LF in Git and deployed as LF on Linux (Vercel)
+
+* text=auto eol=lf
+
+# TypeScript / JavaScript
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.js   text eol=lf
+*.jsx  text eol=lf
+*.mjs  text eol=lf
+
+# Styles & Config
+*.css  text eol=lf
+*.json text eol=lf
+*.mjs  text eol=lf
+*.md   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.env  text eol=lf
+
+# Binary — never touch line endings
+*.png  binary
+*.jpg  binary
+*.webp binary
+*.ico  binary
+*.woff binary
+*.woff2 binary

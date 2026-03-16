@@ -1,0 +1,106 @@
+
+> college-management@0.1.0 lint
+> eslint
+
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\coordinator\classes\page.tsx
+   4:10  warning  'Calendar' is defined but never used                             @typescript-eslint/no-unused-vars
+  21:71  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\coordinator\dashboard\page.tsx
+  22:51  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\coordinator\exams\page.tsx
+   4:10  warning  'FileText' is defined but never used  @typescript-eslint/no-unused-vars
+  34:44  warning  'i' is defined but never used         @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\coordinator\leaves\page.tsx
+  13:39  warning  'action' is defined but never used                               @typescript-eslint/no-unused-vars
+  57:83  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  57:94  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\coordinator\notices\page.tsx
+  4:10  warning  'Bell' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\coordinator\profile\page.tsx
+  4:10  warning  'User' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\coordinator\users\page.tsx
+  4:39  warning  'MoreVertical' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\faculty\assignments\page.tsx
+  6:34  warning  'MapPin' is defined but never used       @typescript-eslint/no-unused-vars
+  6:42  warning  'CheckCircle' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\faculty\dashboard\page.tsx
+  7:25  warning  'formatDate' is defined but never used     @typescript-eslint/no-unused-vars
+  8:23  warning  'ClipboardList' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\faculty\leaves\page.tsx
+   7:60  warning  'Filter' is defined but never used                               @typescript-eslint/no-unused-vars
+  44:39  warning  'action' is defined but never used                               @typescript-eslint/no-unused-vars
+  85:87  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  85:98  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\faculty\notices\page.tsx
+  50:18  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\faculty\results\page.tsx
+  11:76  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\layout.tsx
+  34:9  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font  @next/next/no-page-custom-font
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\student\attendance\page.tsx
+  71:18  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\student\dashboard\page.tsx
+  10:29  warning  'BookOpen' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  10:89  warning  'MapPin' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  65:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\student\dashboard\page.tsx:65:13
+  63 |
+  64 |         } catch {
+> 65 |             setNoticeCount(DEMO_NOTICES.length);
+     |             ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  66 |             // Attendance stats stay gracefully on DEMO defaults
+  67 |         }
+  68 |  react-hooks/set-state-in-effect
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\student\exam-schedule\page.tsx
+   6:31  warning  'MapPin' is defined but never used  @typescript-eslint/no-unused-vars
+  33:36  warning  'i' is defined but never used       @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\student\notices\page.tsx
+  45:18  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\student\results\page.tsx
+  59:18  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\student\today-schedule\page.tsx
+  52:47  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\components\chat\ChatBot.tsx
+  58:47  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\components\layout\DashboardLayout.tsx
+  11:52  warning  'Settings' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\lib\auth-context.tsx
+  72:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  73:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  74:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  75:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  78:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  80:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 40 problems (17 errors, 23 warnings)
+

@@ -1,0 +1,28 @@
+
+> college-management@0.1.0 lint
+> eslint
+
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\api\users\route.ts
+  18:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\api\users\upload\route.ts
+  50:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\coordinator\users\page.tsx
+   70:101  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  108:61   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  143:33   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\login\page.tsx
+   6:10  warning  'GraduationCap' is defined but never used                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  61:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\components\layout\DashboardLayout.tsx
+   10:44  warning  'GraduationCap' is defined but never used                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  101:37  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  265:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+✖ 11 problems (6 errors, 5 warnings)
+

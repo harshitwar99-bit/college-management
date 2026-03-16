@@ -1,0 +1,47 @@
+
+> college-management@0.1.0 build
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.6s
+  Skipping validation of types
+  Collecting page data using 15 workers ...
+Error [PrismaClientInitializationError]: `PrismaClient` needs to be constructed with a non-empty, valid `PrismaClientOptions`:
+
+```
+new PrismaClient({
+  ...
+})
+```
+
+or
+
+```
+constructor() {
+  super({ ... });
+}
+```
+          
+    at module evaluation (C:\Users\harsh\Desktop\its Management system\college-management\.next\server\chunks\[root-of-the-server]__f2c6b5f2._.js:1:1167)
+    at instantiateModule (C:\Users\harsh\Desktop\its Management system\college-management\.next\server\chunks\[turbopack]_runtime.js:740:9)
+    at getOrInstantiateModuleFromParent (C:\Users\harsh\Desktop\its Management system\college-management\.next\server\chunks\[turbopack]_runtime.js:763:12)
+    at Context.esmImport [as i] (C:\Users\harsh\Desktop\its Management system\college-management\.next\server\chunks\[turbopack]_runtime.js:228:20)
+    at module evaluation (C:\Users\harsh\Desktop\its Management system\college-management\.next\server\chunks\[root-of-the-server]__f2c6b5f2._.js:1:1492)
+    at instantiateModule (C:\Users\harsh\Desktop\its Management system\college-management\.next\server\chunks\[turbopack]_runtime.js:740:9)
+    at instantiateRuntimeModule (C:\Users\harsh\Desktop\its Management system\college-management\.next\server\chunks\[turbopack]_runtime.js:768:12)
+    at getOrInstantiateRuntimeModule (C:\Users\harsh\Desktop\its Management system\college-management\.next\server\chunks\[turbopack]_runtime.js:781:12)
+    at Object.m (C:\Users\harsh\Desktop\its Management system\college-management\.next\server\chunks\[turbopack]_runtime.js:790:18) {
+  clientVersion: '7.4.2',
+  errorCode: undefined,
+  retryable: undefined
+}
+
+> Build error occurred
+Error: Failed to collect page data for /api/users/profile
+    at ignore-listed frames {
+  type: 'Error'
+}

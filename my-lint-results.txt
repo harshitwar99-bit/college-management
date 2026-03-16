@@ -1,0 +1,21 @@
+[0m[0m
+[0m[4mC:\Users\harsh\Desktop\its Management system\college-management\src\app\coordinator\leaves\page.tsx[24m[0m
+[0m  [2m13:39[22m  [33mwarning[39m  '_action' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\harsh\Desktop\its Management system\college-management\src\app\faculty\leaves\page.tsx[24m[0m
+[0m  [2m44:39[22m  [33mwarning[39m  '_action' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\harsh\Desktop\its Management system\college-management\src\app\faculty\notices\page.tsx[24m[0m
+[0m  [2m50:18[22m  [33mwarning[39m  '_error' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\harsh\Desktop\its Management system\college-management\src\app\student\attendance\page.tsx[24m[0m
+[0m  [2m71:18[22m  [33mwarning[39m  '_error' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\harsh\Desktop\its Management system\college-management\src\app\student\notices\page.tsx[24m[0m
+[0m  [2m45:18[22m  [33mwarning[39m  '_error' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\harsh\Desktop\its Management system\college-management\src\app\student\results\page.tsx[24m[0m
+[0m  [2m59:18[22m  [33mwarning[39m  '_error' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[33m[1m✖ 6 problems (0 errors, 6 warnings)[22m[39m[0m
+[0m[33m[1m[22m[39m[0m

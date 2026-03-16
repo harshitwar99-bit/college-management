@@ -1,0 +1,31 @@
+﻿
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\api\users\route.ts
+  10:11  warning  'url' is assigned a value but never used           @typescript-eslint/no-unused-vars
+  11:11  warning  'acceptHeader' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\coordinator\notices\page.tsx
+  41:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\coordinator\profile\page.tsx
+  7:10  warning  'db' is defined but never used         @typescript-eslint/no-unused-vars
+  8:10  warning  'doc' is defined but never used        @typescript-eslint/no-unused-vars
+  8:15  warning  'updateDoc' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\coordinator\users\page.tsx
+  14:106  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\faculty\notices\page.tsx
+  115:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\faculty\profile\page.tsx
+  7:10  warning  'db' is defined but never used         @typescript-eslint/no-unused-vars
+  8:10  warning  'doc' is defined but never used        @typescript-eslint/no-unused-vars
+  8:15  warning  'updateDoc' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\harsh\Desktop\its Management system\college-management\src\app\student\profile\page.tsx
+   9:10  warning  'db' is defined but never used         @typescript-eslint/no-unused-vars
+  10:10  warning  'doc' is defined but never used        @typescript-eslint/no-unused-vars
+  10:15  warning  'updateDoc' is defined but never used  @typescript-eslint/no-unused-vars
+
+Γ£û 14 problems (3 errors, 11 warnings)
+

@@ -1,0 +1,278 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ------------------------------------
+// Enums
+// ------------------------------------
+enum Role {
+  STUDENT
+  FACULTY
+  COORDINATOR
+  ADMIN
+  HOD
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  LEAVE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NoticeType {
+  GENERAL
+  EXAM
+  EVENT
+  HOLIDAY
+  ASSIGNMENT
+}
+
+// ------------------------------------
+// Core Models
+// ------------------------------------
+
+model User {
+  id               String      @id @default(uuid())
+  firebaseId       String?     @unique
+  email            String      @unique
+  name             String
+  role             Role        @default(STUDENT)
+  phone            String?
+  collegeRollNo    String?     @unique
+  universityRollNo String?     @unique
+  dob              DateTime?
+  fatherName       String?
+  address          String?
+  seatType         String?
+  batch            String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  // Relationships
+  departmentId     String?
+  department       Department? @relation(fields: [departmentId], references: [id])
+  attendance       Attendance[]
+  submissions      AssignmentSubmission[]
+  leaves           Leave[]
+  feeTransactions  FeeTransaction[]
+  results          Result[]
+  bookBorrows      BookBorrow[]
+}
+
+model Department {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  users       User[]
+  courses     Course[]
+}
+
+model Course {
+  id           String   @id @default(uuid())
+  name         String
+  code         String   @unique
+  departmentId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relationships
+  department   Department @relation(fields: [departmentId], references: [id])
+  subjects     Subject[]
+}
+
+model Subject {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  credits     Int
+  courseId    String
+  semester    Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  course      Course   @relation(fields: [courseId], references: [id])
+  attendance  Attendance[]
+  exams       Exam[]
+  results     Result[]
+  timetable   Timetable[]
+}
+
+// ------------------------------------
+// Academic Models
+// ------------------------------------
+
+model Attendance {
+  id        String           @id @default(uuid())
+  date      DateTime
+  status    AttendanceStatus @default(PRESENT)
+  userId    String
+  subjectId String
+  createdAt DateTime         @default(now())
+
+  // Relationships
+  user      User    @relation(fields: [userId], references: [id])
+  subject   Subject @relation(fields: [subjectId], references: [id])
+}
+
+model Exam {
+  id        String   @id @default(uuid())
+  subjectId String
+  date      DateTime
+  time      String
+  duration  String
+  type      String   // e.g., Mid-Semester, End-Semester
+  createdAt DateTime @default(now())
+
+  // Relationships
+  subject   Subject    @relation(fields: [subjectId], references: [id])
+  seats     ExamSeat[]
+}
+
+model ExamSeat {
+  id         String @id @default(uuid())
+  examId     String
+  hall       String
+  row        String
+  seat       String
+  rollNumber String
+
+  // Relationships
+  exam       Exam   @relation(fields: [examId], references: [id])
+}
+
+model Notice {
+  id        String     @id @default(uuid())
+  title     String
+  body      String
+  type      NoticeType @default(GENERAL)
+  author    String
+  date      DateTime   @default(now())
+  createdAt DateTime   @default(now())
+}
+
+model Assignment {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  subjectId   String
+  dueDate     DateTime
+  facultyId   String
+  createdAt   DateTime @default(now())
+
+  // Relationships
+  submissions AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id           String   @id @default(uuid())
+  assignmentId String
+  userId       String
+  status       String   // e.g., Submitted, Pending, Graded
+  marks        String?
+  submittedAt  DateTime @default(now())
+
+  // Relationships
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  user         User       @relation(fields: [userId], references: [id])
+}
+
+model Leave {
+  id        String      @id @default(uuid())
+  userId    String
+  role      String      // student or faculty
+  startDate DateTime
+  endDate   DateTime
+  reason    String
+  status    LeaveStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+
+  // Relationships
+  user      User @relation(fields: [userId], references: [id])
+}
+
+model FeeTransaction {
+  id        String   @id @default(uuid())
+  userId    String
+  amount    Float
+  date      DateTime
+  method    String
+  status    String
+  semester  String
+  createdAt DateTime @default(now())
+
+  // Relationships
+  user      User @relation(fields: [userId], references: [id])
+}
+
+model Result {
+  id        String   @id @default(uuid())
+  userId    String
+  subjectId String
+  internal  Int
+  external  Int
+  total     Int
+  max       Int
+  grade     String?
+  createdAt DateTime @default(now())
+
+  // Relationships
+  user      User    @relation(fields: [userId], references: [id])
+  subject   Subject @relation(fields: [subjectId], references: [id])
+}
+
+model Timetable {
+  id        String   @id @default(uuid())
+  day       String   // Monday, Tuesday, etc.
+  startTime String
+  endTime   String
+  subjectId String
+  faculty   String
+  room      String
+  createdAt DateTime @default(now())
+
+  // Relationships
+  subject   Subject @relation(fields: [subjectId], references: [id])
+}
+
+model LibraryBook {
+  id        String   @id @default(uuid())
+  title     String
+  author    String
+  isbn      String?  @unique
+  quantity  Int      @default(1)
+  available Int      @default(1)
+  createdAt DateTime @default(now())
+
+  // Relationships
+  borrows   BookBorrow[]
+}
+
+model BookBorrow {
+  id         String    @id @default(uuid())
+  bookId     String
+  userId     String
+  borrowDate DateTime  @default(now())
+  dueDate    DateTime
+  returnDate DateTime?
+  status     String    // Borrowed, Returned, Overdue
+
+  // Relationships
+  book       LibraryBook @relation(fields: [bookId], references: [id])
+  user       User        @relation(fields: [userId], references: [id])
+}

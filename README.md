@@ -34,3 +34,9 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## High Concurrency Tuning
+To support 10,000+ concurrent users, the application includes:
+- **IP-Based Rate Limiting** configured in `middleware.ts` to reject excessive requests.
+- **Global Error Boundaries** (`error.tsx`, `global-error.tsx`) to catch unexpected failures gracefully without crashing the whole application wrapper.
+- **Prisma Connection Pooling**: Be sure to append `?connection_limit=50&pool_timeout=10` to your `DATABASE_URL` in your `.env.local` or environment variables to gracefully handle database load spikes and avoid 'too many connections' database errors.
