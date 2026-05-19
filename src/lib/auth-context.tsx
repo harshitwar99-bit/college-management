@@ -57,9 +57,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     const handleMockLogin = (email: string, password: string): UserProfile => {
+        // First check static DEMO_USERS
         const match = DEMO_USERS.find(
             u => u.email === email && u.password === password
         );
+
+        // Also check dynamically registered coordinators (stored in localStorage)
+        if (!match) {
+            try {
+                const dynamicCoords = JSON.parse(localStorage.getItem("registered_coordinators") || "[]");
+                const dynMatch = dynamicCoords.find((u: any) => u.email === email && u.password === password);
+                if (dynMatch) {
+                    return {
+                        id: dynMatch.uid,
+                        name: dynMatch.name,
+                        email: dynMatch.email,
+                        role: "coordinator",
+                        phone: dynMatch.phone || "",
+                    };
+                }
+            } catch { /* ignore parse errors */ }
+        }
+
         if (!match) throw new Error("Invalid demo credentials");
 
         const profile: UserProfile = {

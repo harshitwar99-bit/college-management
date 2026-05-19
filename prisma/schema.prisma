@@ -6,6 +6,7 @@ datasource db {
   provider = "postgresql"
 }
 
+
 // ------------------------------------
 // Enums
 // ------------------------------------
@@ -185,6 +186,7 @@ model AssignmentSubmission {
   userId       String
   status       String   // e.g., Submitted, Pending, Graded
   marks        String?
+  fileUrl      String?
   submittedAt  DateTime @default(now())
 
   // Relationships

@@ -3,16 +3,20 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
-  // Skip TypeScript type-check during build (demo app, all types are correct at runtime)
+  // Skip TypeScript type-check during build
   typescript: {
     ignoreBuildErrors: true,
   },
 
-
-
-  // Required for Vercel: allow images from any origin if needed
+  // Required for Vercel: allow images from any origin
   images: {
     unoptimized: true,
+  },
+
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
   },
 };
 

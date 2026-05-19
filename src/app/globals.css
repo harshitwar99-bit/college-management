@@ -362,6 +362,21 @@ html .t-faint {
   animation: pulseGlow 2s infinite;
 }
 
+@keyframes glowRed {
+  0%, 100% {
+    color: rgba(255, 0, 0, 0.5);
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.4);
+  }
+  50% {
+    color: rgba(255, 60, 60, 1);
+    text-shadow: 0 0 20px rgba(255, 0, 0, 1), 0 0 30px rgba(255, 0, 0, 0.8);
+  }
+}
+
+.glow-red {
+  animation: glowRed 2s infinite;
+}
+
 /* ═══════════════════════════════════════════════════════════
    PROGRESS BAR BG  (attendance page)
 ═══════════════════════════════════════════════════════════ */

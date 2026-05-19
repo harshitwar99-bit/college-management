@@ -1,41 +1,91 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { Plus, Edit2, Trash2, Calendar as CalendarIcon, Pin, Send, X } from "lucide-react";
+import { Plus, Edit2, Trash2, Calendar as CalendarIcon, Pin, Send, X, AlertCircle } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 import { DEMO_NOTICES } from "@/lib/demo-data";
 
 export default function ManageNoticesPage() {
-    const [notices, setNotices] = useState(DEMO_NOTICES);
+    const { userProfile } = useAuth();
+    const [notices, setNotices] = useState<any[]>(DEMO_NOTICES);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [title, setTitle] = useState("");
     const [body, setBody] = useState("");
     const [type, setType] = useState("general");
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const handleSave = (e: React.FormEvent) => {
+    useEffect(() => {
+        if (!userProfile?.id) return;
+        const fetchNotices = async () => {
+            try {
+                const res = await fetch(`/api/notices?firebaseId=${userProfile.id}`);
+                const json = await res.json();
+                if (json.success && json.data.length > 0) {
+                    const mapped = json.data.map((n: any) => ({
+                        ...n,
+                        type: n.type.toLowerCase()
+                    }));
+                    setNotices(mapped);
+                }
+                // else keep DEMO_NOTICES
+            } catch (err) {
+                console.error("Failed to fetch notices", err);
+                // keep DEMO_NOTICES on error
+            }
+        };
+        fetchNotices();
+    }, [userProfile?.id]);
+
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title || !body) return;
+        if (!title || !body || !userProfile?.id) return;
+        setIsSaving(true);
+        setErrorMsg(null);
 
-        if (editingId) {
-            setNotices(prev => prev.map(n => n.id === editingId ? { ...n, title, body, type } : n));
-        } else {
-            const newNotice = {
-                id: `notice-${Date.now()}`,
-                title,
-                body,
-                type,
-                author: "Coordinator",
-                date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-            };
-            setNotices(prev => [newNotice, ...prev]);
+        try {
+            if (editingId && !editingId.startsWith("notice-")) {
+                const res = await fetch(`/api/notices/${editingId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ firebaseId: userProfile.id, title, body, type })
+                });
+                const json = await res.json();
+                if (json.success) {
+                    setNotices(prev => prev.map(n => n.id === editingId ? { ...n, title, body, type } : n));
+                } else {
+                    setErrorMsg("Failed to update notice. Please try again.");
+                    return;
+                }
+            } else if (!editingId) {
+                const res = await fetch('/api/notices', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ firebaseId: userProfile.id, title, body, type })
+                });
+                const json = await res.json();
+                if (json.success) {
+                    const mappedNew = { ...json.data, type: json.data.type?.toLowerCase() || 'general', date: new Date().toLocaleDateString() };
+                    setNotices(prev => [mappedNew, ...prev]);
+                } else {
+                    setErrorMsg("Failed to publish notice. Please try again.");
+                    return;
+                }
+            }
+
+            setShowForm(false);
+            setEditingId(null);
+            setTitle("");
+            setBody("");
+            setType("general");
+        } catch (error) {
+            console.error("Save notice failed:", error);
+            setErrorMsg("Network error. Please check your connection and try again.");
+        } finally {
+            setIsSaving(false);
         }
-
-        setShowForm(false);
-        setEditingId(null);
-        setTitle("");
-        setBody("");
-        setType("general");
     };
 
     const handleEdit = (notice: { id: string, title: string, body: string, type: string, author: string, date: string }) => {
@@ -44,11 +94,27 @@ export default function ManageNoticesPage() {
         setType(notice.type);
         setEditingId(notice.id);
         setShowForm(true);
+        setErrorMsg(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const handleDelete = (id: string) => {
-        setNotices(prev => prev.filter(n => n.id !== id));
+    const handleDelete = async (id: string) => {
+        const confirmed = window.confirm("Are you sure you want to delete this notice? This cannot be undone.");
+        if (!confirmed) return;
+        if (!userProfile?.id) return;
+        try {
+            if (!id.startsWith("notice-")) {
+                const res = await fetch(`/api/notices/${id}?firebaseId=${userProfile.id}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    setErrorMsg("Failed to delete notice. Please try again.");
+                    return;
+                }
+            }
+            setNotices(prev => prev.filter(n => n.id !== id));
+        } catch (error) {
+            console.error("Delete failed:", error);
+            setErrorMsg("Network error while deleting. Please try again.");
+        }
     };
 
     return (
@@ -65,6 +131,7 @@ export default function ManageNoticesPage() {
                             setEditingId(null);
                             setTitle("");
                             setBody("");
+                            setErrorMsg(null);
                         } else {
                             setShowForm(true);
                         }
@@ -75,6 +142,17 @@ export default function ManageNoticesPage() {
                     {showForm ? "Cancel" : "Publish New Notice"}
                 </button>
             </div>
+
+            {/* Error Banner */}
+            {errorMsg && (
+                <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-3 fade-in">
+                    <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                    <p className="text-red-400 text-sm">{errorMsg}</p>
+                    <button onClick={() => setErrorMsg(null)} className="ml-auto text-red-400 hover:text-red-300">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
 
             {showForm && (
                 <div className="glass-card p-5 mb-8 fade-in">
@@ -108,8 +186,13 @@ export default function ManageNoticesPage() {
                         </div>
 
                         <div className="flex justify-end gap-3 pt-2">
-                            <button type="submit" className="btn-primary flex items-center gap-2 py-2 px-6">
-                                <Send className="w-4 h-4" /> {editingId ? "Save Changes" : "Publish"}
+                            <button type="submit" disabled={isSaving} className="btn-primary flex items-center gap-2 py-2 px-6 disabled:opacity-60 disabled:cursor-not-allowed">
+                                {isSaving ? (
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    <Send className="w-4 h-4" />
+                                )}
+                                {isSaving ? "Saving..." : editingId ? "Save Changes" : "Publish"}
                             </button>
                         </div>
                     </form>
@@ -117,6 +200,15 @@ export default function ManageNoticesPage() {
             )}
 
             <div className="grid grid-cols-1 gap-4 fade-in" style={{ animationDelay: "100ms" }}>
+                {notices.length === 0 && !showForm && (
+                    <div className="glass-card p-12 text-center">
+                        <div className="w-14 h-14 rounded-2xl bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
+                            <Pin className="w-7 h-7 text-blue-400" />
+                        </div>
+                        <p className="text-white font-semibold mb-1">No notices yet</p>
+                        <p className="text-slate-400 text-sm">Publish your first campus announcement.</p>
+                    </div>
+                )}
                 {notices.map((notice, i) => (
                     <div key={notice.id} className="glass-card p-5 group transition-all duration-300 hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/10 border-l-4" style={{
                         borderLeftColor:

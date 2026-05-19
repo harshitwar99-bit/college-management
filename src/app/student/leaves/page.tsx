@@ -6,35 +6,102 @@ import { DEMO_LEAVES } from "@/lib/demo-data";
 import { useAuth } from "@/lib/auth-context";
 import { CalendarClock, CheckCircle, XCircle, Clock, Plus, Navigation } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { useEffect } from "react";
 
 export default function StudentLeavesPage() {
     const { userProfile } = useAuth();
-    const [leaves, setLeaves] = useState(DEMO_LEAVES.filter(l => l.role === "student" && l.applicant === (userProfile?.name || "Arjun Sharma")));
+    // Filter demo leaves for current user (by name or role)
+    const [leaves, setLeaves] = useState<any[]>(
+        DEMO_LEAVES.filter(l => l.role === "student" && l.applicant === (userProfile?.name || "HARSHIT"))
+    );
 
     // Form states
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [reason, setReason] = useState("");
     const [type, setType] = useState("Medical");
+    const [submitError, setSubmitError] = useState(""); // Bug #6: error feedback
 
-    const handleApply = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!startDate || !endDate || !reason) return;
-
-        const newLeave = {
-            id: `l-${Date.now()}`,
-            applicant: userProfile?.name || "Arjun Sharma",
-            role: "student",
-            startDate,
-            endDate,
-            reason,
-            status: "pending"
+    useEffect(() => {
+        if (!userProfile?.id) return;
+        const fetchLeaves = async () => {
+            try {
+                const res = await fetch(`/api/leaves?firebaseId=${userProfile.id}`);
+                const json = await res.json();
+                if (json.success && json.data.length > 0) {
+                    const mapped = json.data.map((l: any) => ({
+                        ...l,
+                        status: l.status.toLowerCase()
+                    }));
+                    setLeaves(mapped);
+                }
+                // else keep demo leaves
+            } catch (error) {
+                console.error("Failed to fetch leaves", error);
+                // keep demo leaves
+            }
         };
+        fetchLeaves();
+    }, [userProfile?.id]);
 
-        setLeaves(prev => [newLeave, ...prev]);
-        setStartDate("");
-        setEndDate("");
-        setReason("");
+    const handleApply = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!startDate || !endDate || !reason || !userProfile?.id) return;
+        setSubmitError("");
+
+        try {
+            const res = await fetch('/api/leaves', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    firebaseId: userProfile.id,
+                    startDate,
+                    endDate,
+                    reason: `[${type}] ${reason}`
+                })
+            });
+            const json = await res.json();
+            if (json.success) {
+                const newLeave = { ...json.data, status: json.data.status.toLowerCase() };
+                setLeaves(prev => [newLeave, ...prev]);
+                setStartDate("");
+                setEndDate("");
+                setReason("");
+            } else {
+                throw new Error(json.error || "Submission failed");
+            }
+        } catch (error) {
+            console.error("Apply leave error:", error);
+            // Bug #6 fix: show visible error instead of silent failure
+            // In demo mode (DB offline), add the leave locally so UX is not broken
+            const localLeave = {
+                id: `local_${Date.now()}`,
+                reason: `[${type}] ${reason}`,
+                startDate,
+                endDate,
+                status: "pending",
+                applicant: userProfile?.name || "Student",
+                role: "student",
+            };
+            setLeaves(prev => [localLeave, ...prev]);
+            setStartDate("");
+            setEndDate("");
+            setReason("");
+            setSubmitError("Saved locally (database offline — will sync when connected).");
+            setTimeout(() => setSubmitError(""), 4000);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!userProfile?.id) return;
+        try {
+            const res = await fetch(`/api/leaves/${id}?firebaseId=${userProfile.id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setLeaves(prev => prev.filter(x => x.id !== id));
+            }
+        } catch (error) {
+            console.error("Delete leave error:", error);
+        }
     };
 
     return (
@@ -84,6 +151,12 @@ export default function StudentLeavesPage() {
                                     <p>Medical certificates must be submitted to the department physically upon return.</p>
                                 </div>
                             )}
+                            {submitError && (
+                                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs flex items-start gap-2">
+                                    <span className="mt-0.5">⚠</span>
+                                    <span>{submitError}</span>
+                                </div>
+                            )}
                             <button type="submit" className="w-full btn-primary py-2.5 text-sm">
                                 Submit Application
                             </button>
@@ -125,7 +198,7 @@ export default function StudentLeavesPage() {
                                     </p>
                                 </div>
                                 {l.status === 'pending' && (
-                                    <button onClick={() => setLeaves(prev => prev.filter(x => x.id !== l.id))} className="px-3 py-1.5 bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-red-400 text-xs font-medium rounded-lg transition-colors">
+                                    <button onClick={() => handleDelete(l.id)} className="px-3 py-1.5 bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-red-400 text-xs font-medium rounded-lg transition-colors">
                                         Cancel Request
                                     </button>
                                 )}

@@ -2,13 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { DEMO_TIMETABLE } from "@/lib/demo-data";
+import { useAuth } from "@/lib/auth-context";
+import { useTimetable } from "@/lib/useTimetable";
 import { getCurrentDay, formatTime, cn } from "@/lib/utils";
+import { Clock } from "lucide-react";
 
 export default function TodaySchedulePage() {
+    const { userProfile } = useAuth();
     const [now, setNow] = useState(new Date());
     const today = getCurrentDay();
-    const classes = DEMO_TIMETABLE[today] || [];
+    const { timetable } = useTimetable(userProfile?.branch);
+    const classes = (timetable[today] || []).sort((a, b) => {
+        const ta = parseInt(a.time.replace(":", ""), 10);
+        const tb = parseInt(b.time.replace(":", ""), 10);
+        return ta - tb;
+    });
 
     useEffect(() => {
         const interval = setInterval(() => setNow(new Date()), 1000);
@@ -47,6 +55,16 @@ export default function TodaySchedulePage() {
         return hrs > 0 ? `${hrs}h ${mins}m left` : `${mins} min left`;
     };
 
+    // Demo-friendly: if all classes are "done" (e.g., opened in the evening),
+    // show a preview mode that treats the schedule as upcoming
+    const allDone = classes.length > 0 && classes.every(c => getStatus(c.time, c.end) === "done");
+    const [previewMode, setPreviewMode] = useState(false);
+
+    const resolveStatus = (startTime: string, endTime: string) => {
+        if (previewMode) return "upcoming";
+        return getStatus(startTime, endTime);
+    };
+
     return (
         <DashboardLayout role="student" title="Today's Schedule">
             <div className="page-header">Today&apos;s Schedule</div>
@@ -69,17 +87,48 @@ export default function TodaySchedulePage() {
                 </div>
             </div>
 
+            {/* Demo-mode banner when all classes are over */}
+            {allDone && !previewMode && (
+                <div className="mb-4 p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 flex items-center justify-between gap-3 fade-in">
+                    <div className="flex items-center gap-2 text-amber-400 text-sm">
+                        <Clock className="w-4 h-4 flex-shrink-0" />
+                        All classes for today have ended. Viewing completed schedule.
+                    </div>
+                    <button
+                        onClick={() => setPreviewMode(true)}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:bg-amber-500/30 transition-colors flex-shrink-0"
+                    >
+                        Preview as Upcoming
+                    </button>
+                </div>
+            )}
+            {previewMode && (
+                <div className="mb-4 p-3 rounded-xl border border-blue-500/20 bg-blue-500/5 flex items-center justify-between gap-3 fade-in">
+                    <span className="text-blue-400 text-sm flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                        Preview mode — showing schedule as if classes are upcoming
+                    </span>
+                    <button
+                        onClick={() => setPreviewMode(false)}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-colors flex-shrink-0"
+                    >
+                        Exit Preview
+                    </button>
+                </div>
+            )}
+
             {/* Timeline */}
             <div className="space-y-3 fade-in">
                 {classes.length === 0 ? (
                     <div className="glass-card p-10 text-center">
                         <p className="text-4xl mb-3">🏖️</p>
                         <p className="text-white font-semibold">No classes today!</p>
+                        <p className="text-slate-400 text-sm mt-1">Enjoy your day off. Check the timetable for the rest of the week.</p>
                     </div>
                 ) : (
                     classes.map((cls, i) => {
-                        const status = getStatus(cls.time, cls.end);
-                        const countdown = getCountdown(cls.time);
+                        const status = resolveStatus(cls.time, cls.end);
+                        const countdown = previewMode ? null : getCountdown(cls.time);
                         return (
                             <div
                                 key={i}
@@ -115,6 +164,9 @@ export default function TodaySchedulePage() {
                                                     {status === "ongoing" && (
                                                         <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full font-medium">LIVE</span>
                                                     )}
+                                                    {previewMode && (
+                                                        <span className="text-xs bg-amber-600/30 text-amber-400 px-2 py-0.5 rounded-full font-medium">Preview</span>
+                                                    )}
                                                 </div>
                                                 <p className="text-slate-500 text-xs">{cls.faculty}</p>
                                             </div>
@@ -132,7 +184,10 @@ export default function TodaySchedulePage() {
                                             {status === "upcoming" && countdown && (
                                                 <span className="text-xs text-amber-400">Starts in {countdown}</span>
                                             )}
-                                            {status === "done" && (
+                                            {status === "upcoming" && previewMode && (
+                                                <span className="text-xs text-amber-400/70">Upcoming</span>
+                                            )}
+                                            {status === "done" && !previewMode && (
                                                 <span className="text-xs text-slate-600">Completed ✓</span>
                                             )}
                                         </div>

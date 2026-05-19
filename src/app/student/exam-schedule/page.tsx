@@ -1,12 +1,41 @@
 "use client";
 
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { DEMO_EXAMS } from "@/lib/demo-data";
 import { getDaysUntil, formatDate, formatTime } from "@/lib/utils";
-import { CalendarDays, Clock, BookOpen } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { useEffect, useState } from "react";
+import { CalendarDays, Clock, BookOpen, ExternalLink } from "lucide-react";
+import { getDemoData } from "@/lib/demo-data";
 
 export default function ExamSchedulePage() {
-    const sorted = [...DEMO_EXAMS].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const { userProfile } = useAuth();
+    const [exams, setExams] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (!userProfile?.id) return;
+        const fetchExams = async () => {
+            const demoExams = getDemoData(userProfile?.branch).exams;
+            setExams(demoExams); // set branch data immediately as default
+            try {
+                const res = await fetch(`/api/exams?firebaseId=${userProfile.id}`);
+                const json = await res.json();
+                if (json.success && json.data.length > 0) {
+                    const mapped = json.data.map((ex: any) => ({
+                        id: ex.id,
+                        subject: ex.subject?.name || "Unknown Subject",
+                        date: ex.date,
+                        time: ex.time,
+                        duration: ex.duration,
+                        type: ex.type
+                    }));
+                    setExams(mapped.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()));
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchExams();
+    }, [userProfile?.id, userProfile?.branch]);
 
     return (
         <DashboardLayout role="student" title="Exam Schedule">
@@ -18,11 +47,18 @@ export default function ExamSchedulePage() {
                 <div className="flex items-center gap-4">
                     <div className="text-4xl">📝</div>
                     <div>
-                        <p className="text-white font-semibold">Mid-Semester Examinations</p>
-                        <p className="text-slate-400 text-sm">{sorted.length} exams · Starts {formatDate(sorted[0]?.date)}</p>
+                        <p className="text-white font-semibold">End-Semester Examinations</p>
+                        <p className="text-slate-400 text-sm">{exams.length} exams · {exams.length > 0 ? `Next: ${formatDate(exams.filter(e => getDaysUntil(e.date) >= 0)[0]?.date || exams[0].date)}` : "No exams scheduled"}</p>
                     </div>
                     <div className="ml-auto text-right">
-                        <p className="text-3xl font-bold text-purple-400">{getDaysUntil(sorted[0]?.date)}</p>
+                        <p className="text-3xl font-bold text-purple-400">
+                            {exams.length > 0 
+                                ? (() => {
+                                    const nextExam = exams.find(e => getDaysUntil(e.date) >= 0);
+                                    return nextExam ? getDaysUntil(nextExam.date) : "—";
+                                })()
+                                : "-"}
+                        </p>
                         <p className="text-slate-400 text-xs">days to go</p>
                     </div>
                 </div>
@@ -30,7 +66,7 @@ export default function ExamSchedulePage() {
 
             {/* Exam cards */}
             <div className="space-y-3 fade-in">
-                {sorted.map((exam) => {
+                {exams.map((exam) => {
                     const days = getDaysUntil(exam.date);
                     const isPast = days < 0;
                     const isToday = days === 0;
@@ -85,6 +121,34 @@ export default function ExamSchedulePage() {
                     <li>• Mobile phones are strictly prohibited in the exam hall</li>
                     <li>• Refer to the Seating Plan section for your seat number</li>
                 </ul>
+            </div>
+
+            {/* CCSU Quick Links */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 fade-in">
+                <button
+                    onClick={() => window.open("https://www.ccsuniversityweb.in/ExamForm/ExamFormLinks.aspx", "_blank", "noopener,noreferrer")}
+                    className="flex items-center gap-4 p-5 rounded-2xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 hover:border-purple-400/50 transition-all group text-left"
+                >
+                    <div className="w-11 h-11 rounded-xl bg-purple-500/20 flex items-center justify-center flex-shrink-0 group-hover:bg-purple-500/30 transition-colors">
+                        <ExternalLink className="w-5 h-5 text-purple-400" />
+                    </div>
+                    <div>
+                        <p className="font-semibold text-white text-sm group-hover:text-purple-300 transition-colors">Fill Examination Form</p>
+                        <p className="text-xs text-slate-500 mt-0.5">ccsuniversityweb.in · Opens in new tab</p>
+                    </div>
+                </button>
+                <button
+                    onClick={() => window.open("https://www.ccsuniversityweb.in/Admit%20Card/AdmitCardSearchStudent.aspx?STAT=COLL", "_blank", "noopener,noreferrer")}
+                    className="flex items-center gap-4 p-5 rounded-2xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-400/50 transition-all group text-left"
+                >
+                    <div className="w-11 h-11 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-500/30 transition-colors">
+                        <ExternalLink className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                        <p className="font-semibold text-white text-sm group-hover:text-blue-300 transition-colors">Download Admit Card</p>
+                        <p className="text-xs text-slate-500 mt-0.5">ccsuniversityweb.in · Opens in new tab</p>
+                    </div>
+                </button>
             </div>
         </DashboardLayout>
     );

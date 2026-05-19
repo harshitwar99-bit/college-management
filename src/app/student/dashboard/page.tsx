@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { DEMO_ATTENDANCE, DEMO_TIMETABLE, DEMO_EXAMS, DEMO_NOTICES } from "@/lib/demo-data";
+import { getDemoData, DEMO_NOTICES } from "@/lib/demo-data";
 import { getCurrentDay, getAttendanceColor, getDaysUntil, formatDate, getGreetingTime } from "@/lib/utils";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
@@ -13,11 +13,16 @@ import Link from "next/link";
 export default function StudentDashboard() {
     const { userProfile } = useAuth();
     const [noticeCount, setNoticeCount] = useState(DEMO_NOTICES.length);
-    const [attendanceStats, setAttendanceStats] = useState({
-        avg: Math.round(DEMO_ATTENDANCE.reduce((s, a) => s + a.percent, 0) / DEMO_ATTENDANCE.length),
-        low: DEMO_ATTENDANCE.filter(a => a.percent < 75).length
-    });
+    const [attendanceStats, setAttendanceStats] = useState({ avg: 0, low: 0 });
     const [greeting, setGreeting] = useState("");
+
+    // Compute branch-aware attendance stats from demo data
+    useEffect(() => {
+        const att = getDemoData(userProfile?.branch).attendance;
+        const avg = Math.round(att.reduce((s: number, a: {percent:number}) => s + a.percent, 0) / att.length);
+        const low = att.filter((a: {percent:number}) => a.percent < 75).length;
+        setAttendanceStats({ avg, low });
+    }, [userProfile?.branch]);
 
     useEffect(() => {
         let unsubscribeNotices = () => { };
@@ -73,13 +78,15 @@ export default function StudentDashboard() {
     }, [userProfile?.rollNumber]);
 
     const today = getCurrentDay();
-    const todayClasses = DEMO_TIMETABLE[today] || [];
+    const branch = userProfile?.branch || "BCA";
+    const demoData = getDemoData(branch);
+    const todayClasses = demoData.timetable[today] || [];
     const now = new Date();
     const currentHour = now.getHours();
     const currentMin = now.getMinutes();
     const avgAttendance = attendanceStats.avg;
     const lowAttendance = attendanceStats.low;
-    const upcomingExams = DEMO_EXAMS.filter(e => getDaysUntil(e.date) > 0).slice(0, 3);
+    const upcomingExams = demoData.exams.filter((e: {date:string}) => getDaysUntil(e.date) > 0).slice(0, 3);
 
     // Find current/next class
     let currentClass = null;
@@ -168,7 +175,7 @@ export default function StudentDashboard() {
                                 <CalendarCheck className="w-4 h-4 text-purple-400" />
                             </div>
                         </div>
-                        <p className="text-4xl font-bold text-purple-400 my-1">{DEMO_EXAMS.length}</p>
+                        <p className="text-4xl font-bold text-purple-400 my-1">{demoData.exams.length}</p>
                         <p className="text-xs t-muted mt-auto pt-2 border-t theme-divider truncate">
                             {upcomingExams[0] ? `Next in ${getDaysUntil(upcomingExams[0].date)}d (${upcomingExams[0].subject})` : "No upcoming exams"}
                         </p>
@@ -232,8 +239,17 @@ export default function StudentDashboard() {
                         {todayClasses.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-8 text-center h-full">
                                 <CalendarCheck className="w-10 h-10 text-slate-600 mb-3" />
-                                <p className="text-slate-300 font-medium">No classes today 🎉</p>
-                                <p className="text-slate-500 text-xs mt-1">Enjoy your free time!</p>
+                                {branch === "BBA" ? (
+                                    <>
+                                        <p className="text-slate-300 font-medium">BBA Timetable</p>
+                                        <p className="text-slate-500 text-xs mt-1">Check your timetable page for the full BBA schedule.</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-slate-300 font-medium">No classes today 🎉</p>
+                                        <p className="text-slate-500 text-xs mt-1">Enjoy your free time!</p>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>

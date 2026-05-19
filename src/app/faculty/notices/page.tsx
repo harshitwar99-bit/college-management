@@ -5,8 +5,6 @@ import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { DEMO_NOTICES } from "@/lib/demo-data";
 import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, serverTimestamp } from "firebase/firestore";
 import { Send, Trash2 } from "lucide-react";
 
 export default function FacultyNoticesPage() {
@@ -19,71 +17,63 @@ export default function FacultyNoticesPage() {
     const [submitted, setSubmitted] = useState(false);
     const [isUsingFallback, setIsUsingFallback] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        // Attempt to listen to real Firestore updates
-        try {
-            const q = query(collection(db, "notices"), orderBy("date", "desc"));
-            const unsubscribe = onSnapshot(q, (snapshot) => {
-                const fetchedNotices = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    // Handle Firestore timestamps correctly into an ISO string or fallback to now
-                    date: doc.data().date?.toDate?.()?.toISOString() || new Date().toISOString()
-                })) as typeof DEMO_NOTICES;
-                if (fetchedNotices.length > 0) {
-                    setNotices(fetchedNotices);
+        if (!userProfile?.id) return;
+        const fetchNotices = async () => {
+            try {
+                const res = await fetch(`/api/notices?firebaseId=${userProfile.id}`);
+                const json = await res.json();
+                if (json.success) {
+                    const mapped = json.data.map((n: any) => ({
+                        ...n,
+                        type: n.type.toLowerCase()
+                    }));
+                    setNotices(mapped);
                     setIsUsingFallback(false);
                 } else {
-                    // Empty DB scenario: show demo strictly for visual testing if DB is empty but connected
                     setNotices(DEMO_NOTICES);
                     setIsUsingFallback(true);
                 }
-            }, (error) => {
-                console.warn("Firestore listener failed, using demo data fallback.", error);
-                setTimeout(() => {
-                    setNotices(DEMO_NOTICES);
-                    setIsUsingFallback(true);
-                }, 0);
-            });
-
-            return () => unsubscribe();
-        } catch {
-            console.warn("Firestore connection failed.");
-            setTimeout(() => {
+            } catch (error) {
+                console.error("Failed to fetch notices", error);
                 setNotices(DEMO_NOTICES);
                 setIsUsingFallback(true);
-            }, 0);
-        }
-    }, []);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchNotices();
+    }, [userProfile?.id]);
 
     const handlePost = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title || !body) return;
+        if (!title || !body || !userProfile?.id) return;
 
         try {
             if (editingId && !editingId.startsWith("mock-")) {
-                const { updateDoc } = await import("firebase/firestore");
-                await updateDoc(doc(db, "notices", editingId), {
-                    title,
-                    body,
-                    type,
-                    target,
-                    // keep author and date the same
+                const res = await fetch(`/api/notices/${editingId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ firebaseId: userProfile.id, title, body, type, target })
                 });
+                const json = await res.json();
+                if (json.success) {
+                    setNotices(prev => prev.map(n => n.id === editingId ? { ...n, title, body, type, target } : n));
+                }
             } else if (!editingId) {
-                // Attempt real write
-                await addDoc(collection(db, "notices"), {
-                    title,
-                    body,
-                    type,
-                    target,
-                    author: userProfile?.name || "Faculty Member",
-                    date: serverTimestamp() // Set exact server time natively
+                const res = await fetch('/api/notices', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ firebaseId: userProfile.id, title, body, type, target })
                 });
-            }
-
-            if (editingId && editingId.startsWith("mock-") && isUsingFallback) {
+                const json = await res.json();
+                if (json.success) {
+                    const mappedNew = { ...json.data, type: json.data.type?.toLowerCase() || 'general' };
+                    setNotices(prev => [mappedNew, ...prev]);
+                }
+            } else if (editingId && editingId.startsWith("mock-") && isUsingFallback) {
                 setNotices(prev => prev.map(n => n.id === editingId ? { ...n, title, body, type, target } : n));
             }
 
@@ -91,19 +81,11 @@ export default function FacultyNoticesPage() {
             setTimeout(() => { setTitle(""); setBody(""); setEditingId(null); setSubmitted(false); }, 3000);
         } catch (error) {
             console.error("Failed to post notice to DB:", error);
-            // Fallback: mock a visual post if Firebase is down
             if (isUsingFallback) {
                 if (editingId) {
                     setNotices(prev => prev.map(n => n.id === editingId ? { ...n, title, body, type, target } : n));
                 } else {
-                    const newNotice = {
-                        id: `mock-${Date.now()}`,
-                        title,
-                        body,
-                        type,
-                        author: userProfile?.name || "Faculty Member",
-                        date: new Date().toISOString()
-                    };
+                    const newNotice = { id: `mock-${Date.now()}`, title, body, type, target, author: userProfile.name, date: new Date().toISOString() };
                     setNotices(prev => [newNotice, ...prev]);
                 }
                 setSubmitted(true);
@@ -123,8 +105,9 @@ export default function FacultyNoticesPage() {
 
     const handleDelete = async (id: string) => {
         try {
-            if (!id.startsWith("mock-")) {
-                await deleteDoc(doc(db, "notices", id));
+            if (!id.startsWith("mock-") && userProfile?.id) {
+                await fetch(`/api/notices/${id}?firebaseId=${userProfile.id}`, { method: 'DELETE' });
+                setNotices(prev => prev.filter(n => n.id !== id));
             } else {
                 setNotices(prev => prev.filter(n => n.id !== id));
             }
@@ -201,7 +184,16 @@ export default function FacultyNoticesPage() {
             {/* Previous notices */}
             <h3 className="text-white font-semibold mb-3 fade-in">Previous Notices</h3>
             <div className="space-y-3 fade-in">
-                {notices.map(notice => (
+                {isLoading ? (
+                    [1, 2, 3].map(i => (
+                        <div key={i} className="glass-card p-4 animate-pulse flex items-start gap-3">
+                            <div className="flex-1 space-y-2">
+                                <div className="h-4 bg-white/10 rounded w-1/3"></div>
+                                <div className="h-3 bg-white/5 rounded w-1/4"></div>
+                            </div>
+                        </div>
+                    ))
+                ) : notices.map(notice => (
                     <div key={notice.id} className="glass-card p-4 flex items-start gap-3 hover:border-white/20 transition-all">
                         <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">

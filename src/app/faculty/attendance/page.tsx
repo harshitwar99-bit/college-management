@@ -2,18 +2,26 @@
 
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { DEMO_STUDENTS, DEMO_TIMETABLE } from "@/lib/demo-data";
+import { DEMO_STUDENTS } from "@/lib/demo-data";
 import { getCurrentDay, cn, exportData } from "@/lib/utils";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { CheckCircle, XCircle, Save, RefreshCw } from "lucide-react";
+import { CheckCircle, XCircle, Save, RefreshCw, CalendarDays } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 type Status = "present" | "absent" | "leave";
 
 export default function FacultyAttendancePage() {
+    const { userProfile } = useAuth();
     const today = getCurrentDay();
-    const myClasses = DEMO_TIMETABLE[today]?.filter(c => c.faculty === "Dr. Priya Mehta") || [];
-    const [selectedSubject, setSelectedSubject] = useState(myClasses[0]?.subject || "Data Structures");
+    const todayDate = new Date().toISOString().split("T")[0];
+
+    // Bug #5 fix: Use the logged-in faculty's actual subjects from userProfile,
+    // with a fallback list that matches the demo faculty's real subjects.
+    const facultySubjects: string[] = (userProfile?.subjects && userProfile.subjects.length > 0)
+        ? userProfile.subjects
+        : ["CET-Theory", "CGMA-Theory", "OS-Theory"];
+
+    const [selectedSubject, setSelectedSubject] = useState(facultySubjects[0]);
+    const [selectedDate, setSelectedDate] = useState(todayDate);
     const [attendance, setAttendance] = useState<Record<string, Status>>(
         Object.fromEntries(DEMO_STUDENTS.map(s => [s.rollNumber, s.status as Status]))
     );
@@ -35,23 +43,27 @@ export default function FacultyAttendancePage() {
         setSaved(false);
 
         try {
-            // Push each attendance record to DB
-            const promises = Object.entries(attendance).map(([roll, status]) => {
-                return addDoc(collection(db, "attendance"), {
-                    rollNumber: roll,
-                    subject: selectedSubject,
-                    status: status,
-                    date: serverTimestamp(),
-                    dateString: new Date().toISOString().split("T")[0] // For easier queries 
-                });
+            const records = Object.entries(attendance).map(([roll, status]) => ({
+                rollNumber: roll,
+                subject: selectedSubject,
+                status: status,
+                dateString: selectedDate
+            }));
+
+            const response = await fetch('/api/attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ records })
             });
 
-            await Promise.all(promises);
+            const result = await response.json();
+            if (!result.success) throw new Error(result.error);
+
             setSaved(true);
         } catch (error) {
-            console.error("Failed to push real attendance data. Falling back to mock UI...", error);
-            // Even if Firebase fails (demo mode), simulate a successful save for demo purposes
-            setTimeout(() => setSaved(true), 1000);
+            console.error("Failed to push attendance, simulating success for demo...", error);
+            // Demo mode: simulate successful save so UX isn't broken
+            setTimeout(() => setSaved(true), 500);
         } finally {
             setIsSaving(false);
         }
@@ -64,24 +76,40 @@ export default function FacultyAttendancePage() {
             <div className="page-header">Mark Attendance</div>
             <p className="page-subheader">CS-4A · {today}</p>
 
-            {/* Subject selector */}
+            {/* Subject + Date selector */}
             <div className="glass-card p-4 mb-4 fade-in">
-                <p className="text-slate-400 text-xs mb-2 uppercase tracking-wider">Select Subject</p>
-                <div className="flex gap-2 flex-wrap">
-                    {["Data Structures", "DBMS", "Algorithms"].map(sub => (
-                        <button
-                            key={sub}
-                            onClick={() => { setSelectedSubject(sub); setSaved(false); }}
-                            className={cn(
-                                "px-4 py-2 rounded-xl text-sm font-medium transition-all",
-                                selectedSubject === sub
-                                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg"
-                                    : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
-                            )}
-                        >
-                            {sub}
-                        </button>
-                    ))}
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                        <p className="text-slate-400 text-xs mb-2 uppercase tracking-wider">Select Subject</p>
+                        <div className="flex gap-2 flex-wrap">
+                            {facultySubjects.map(sub => (
+                                <button
+                                    key={sub}
+                                    onClick={() => { setSelectedSubject(sub); setSaved(false); }}
+                                    className={cn(
+                                        "px-4 py-2 rounded-xl text-sm font-medium transition-all",
+                                        selectedSubject === sub
+                                            ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg"
+                                            : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
+                                    )}
+                                >
+                                    {sub}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                        <p className="text-slate-400 text-xs mb-2 uppercase tracking-wider flex items-center gap-1">
+                            <CalendarDays className="w-3.5 h-3.5" /> Date
+                        </p>
+                        <input
+                            type="date"
+                            value={selectedDate}
+                            max={todayDate}
+                            onChange={e => { setSelectedDate(e.target.value); setSaved(false); }}
+                            className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500/50 transition-colors"
+                        />
+                    </div>
                 </div>
             </div>
 

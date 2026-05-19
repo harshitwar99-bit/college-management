@@ -1,13 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { DEMO_SEATING } from "@/lib/demo-data";
+import { getDemoData } from "@/lib/demo-data";
 import { formatDate } from "@/lib/utils";
 import { MapPin, Hash, Building2 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 export default function SeatingPlanPage() {
-    const [selected, setSelected] = useState(DEMO_SEATING[0]);
+    const { userProfile } = useAuth();
+    const [seating, setSeating] = useState(getDemoData(undefined).seating);
+    const [selected, setSelected] = useState(seating[0]);
+
+    // Re-sync when branch loads from async auth
+    useEffect(() => {
+        const s = getDemoData(userProfile?.branch).seating;
+        setSeating(s);
+        setSelected(s[0]);
+    }, [userProfile?.branch]);
 
     return (
         <DashboardLayout role="student" title="Seating Plan">
@@ -17,7 +27,7 @@ export default function SeatingPlanPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Exam list */}
                 <div className="lg:col-span-1 space-y-2 fade-in">
-                    {DEMO_SEATING.map((seat) => (
+                    {seating.map((seat) => (
                         <button
                             key={seat.examId}
                             onClick={() => setSelected(seat)}
@@ -67,7 +77,7 @@ export default function SeatingPlanPage() {
                                                 key={`${row}${seatNum}`}
                                                 className={`h-7 rounded-md flex items-center justify-center text-xs font-mono transition-all ${isYours
                                                         ? "bg-blue-600 text-white shadow-lg shadow-blue-500/50 scale-110 z-10"
-                                                        : "bg-white/5 text-slate-600"
+                                                        : "bg-slate-200 dark:bg-white/5 text-slate-500 dark:text-slate-400"
                                                     }`}
                                             >
                                                 {isYours ? "YOU" : `${row}${seatNum}`}

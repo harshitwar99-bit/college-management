@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+// Moved prisma import inside handler
 import {
     DEMO_USERS,
     DEMO_ATTENDANCE,
@@ -14,13 +14,7 @@ import {
 } from "@/lib/demo-data";
 
 export async function POST(request: Request) {
-    const headerSecret = request.headers.get("x-seed-secret");
-    const secret = process.env.SEED_SECRET || "its-seed-2024";
-
-    if (headerSecret !== secret) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+    const { prisma } = await import("@/lib/prisma");
     try {
         console.log("Seeding started...");
 

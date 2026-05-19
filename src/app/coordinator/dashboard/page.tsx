@@ -20,7 +20,15 @@ export default function CoordinatorDashboard() {
         <DashboardLayout role="coordinator" title="Overview">
             {/* Greeting */}
             <div className="mb-8 fade-in">
-                <h1 className="text-3xl font-bold t-heading mb-2">Welcome, {userProfile?.name?.split(" ")[0]}! 👋</h1>
+                <h1 className="text-3xl font-bold t-heading mb-2">Welcome, {
+                    (() => {
+                        const name = userProfile?.name || "";
+                        const honorifics = ["Mr.", "Mrs.", "Ms.", "Dr.", "Prof."];
+                        const parts = name.split(" ");
+                        const withoutHonorific = honorifics.includes(parts[0]) ? parts.slice(1).join(" ") : name;
+                        return withoutHonorific || name;
+                    })()
+                }! 👋</h1>
                 <p className="t-muted">Here&apos;s the institution overview for today.</p>
             </div>
 

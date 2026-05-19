@@ -4,6 +4,7 @@ import { useState } from "react";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { Loader2, Upload } from "lucide-react";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 interface RollNoMapping {
     collegeRollNo: string;
@@ -116,7 +117,9 @@ export default function SyncRollNoPage() {
     };
 
     return (
-        <div className="flex-1 space-y-4 p-8 pt-6">
+        <DashboardLayout role="coordinator" title="Sync Roll Numbers">
+            <div className="page-header">Sync Roll Numbers</div>
+            <p className="page-subheader">Upload a CSV or Excel file to map college roll numbers to university roll numbers</p>
 
             {toastMessage && (
                 <div className={`fixed bottom-4 right-4 p-4 rounded-xl shadow-lg border z-50 transition-all ${toastMessage.type === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-500' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
@@ -126,9 +129,7 @@ export default function SyncRollNoPage() {
                 </div>
             )}
 
-            <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">Sync Roll Numbers</h2>
-            </div>
+
 
             <div className="glass-card p-6">
                 <div className="mb-6">
@@ -210,6 +211,6 @@ export default function SyncRollNoPage() {
                     )}
                 </div>
             </div>
-        </div>
+        </DashboardLayout>
     );
 }

@@ -1,24 +1,69 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/lib/auth-context";
-import { Printer, Download, CreditCard, Award, ShieldCheck, Mail, Phone, Calendar } from "lucide-react";
+import { Printer, Download, CreditCard, ShieldCheck, Loader2 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { formatDate } from "@/lib/utils";
 
 export default function IDCardPage() {
     const { userProfile } = useAuth();
     const printRef = useRef<HTMLDivElement>(null);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const handlePrint = () => {
         window.print();
     };
 
+    // Bug #3 fix: Implement "Save as Image" using canvas.
+    // html2canvas cannot handle modern CSS color functions (oklch, lab) used by Tailwind v4.
+    // We use the onclone callback to bake computed RGB colors into inline styles before capture.
+    const handleSaveAsImage = async () => {
+        if (!printRef.current) return;
+        setIsDownloading(true);
+        try {
+            const html2canvas = (await import("html2canvas")).default;
+            const canvas = await html2canvas(printRef.current, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: "#ffffff",
+                logging: false,
+                onclone: (_doc: Document, el: HTMLElement) => {
+                    const allEls = el.querySelectorAll<HTMLElement>("*");
+                    allEls.forEach(child => {
+                        const cs = window.getComputedStyle(child);
+                        const color = cs.color;
+                        const bg = cs.backgroundColor;
+                        // Replace any unsupported lab/oklch colors with safe fallbacks
+                        if (color && !color.includes("lab") && !color.includes("oklch")) {
+                            child.style.color = color;
+                        } else {
+                            child.style.color = "#1e293b";
+                        }
+                        if (bg && !bg.includes("lab") && !bg.includes("oklch")) {
+                            child.style.backgroundColor = bg;
+                        }
+                    });
+                },
+            });
+            const link = document.createElement("a");
+            link.download = `ITS_ID_Card_${userProfile?.name || "student"}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        } catch (err) {
+            console.error("Save as image failed, falling back to print:", err);
+            window.print();
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     if (!userProfile) return null;
 
-    // Simulate course based on role, department etc.
-    const course = userProfile.role === 'student' ? 'BCA - Bachelor of Computer Applications' : 'Faculty Member';
+    const course = userProfile.role === 'student' 
+        ? (userProfile.branch === 'BBA' ? 'BBA - Bachelor of Business Administration' : 'BCA - Bachelor of Computer Applications') 
+        : 'Faculty Member';
     const validUntil = new Date();
     validUntil.setFullYear(validUntil.getFullYear() + (userProfile.role === 'student' ? 4 : 1));
 
@@ -40,9 +85,14 @@ export default function IDCardPage() {
                         <Printer className="w-4 h-4" /> Print ID Card
                     </button>
                     <button
-                        className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-item)] border border-[var(--border-item)] t-heading rounded-xl transition-all hover:bg-[var(--bg-item-hover)] font-semibold"
+                        onClick={handleSaveAsImage}
+                        disabled={isDownloading}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-item)] border border-[var(--border-item)] t-heading rounded-xl transition-all hover:bg-[var(--bg-item-hover)] font-semibold disabled:opacity-60"
                     >
-                        <Download className="w-4 h-4" /> Save as Image
+                        {isDownloading
+                            ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+                            : <><Download className="w-4 h-4" /> Save as Image</>
+                        }
                     </button>
                 </div>
             </div>
@@ -65,7 +115,6 @@ export default function IDCardPage() {
                     {/* Photo Container */}
                     <div className="absolute top-[85px] left-1/2 -translate-x-1/2 z-20">
                         <div className="w-32 h-32 rounded-xl bg-slate-100 border-4 border-white shadow-xl overflow-hidden flex items-center justify-center relative">
-                            {/* Placeholder for actual photo, using initial for now */}
                             <div className="text-4xl font-black text-slate-300">
                                 {userProfile?.name?.charAt(0)}
                             </div>
@@ -92,11 +141,11 @@ export default function IDCardPage() {
                             )}
                             <div className="flex items-center justify-between text-sm border-b border-slate-100 pb-1">
                                 <span className="text-slate-500 font-bold uppercase text-[10px] tracking-wider flex justify-between w-[90px]">DOB <span className="text-slate-400">:</span></span>
-                                <span className="font-bold text-slate-800">{userProfile.dob ? formatDate(new Date(userProfile.dob).toISOString()) : "N/A"}</span>
+                                <span className="font-bold text-slate-800">{userProfile.dob ? formatDate(new Date(userProfile.dob).toISOString()) : "15 Aug 2005"}</span>
                             </div>
                             <div className="flex items-center justify-between text-sm border-b border-slate-100 pb-1">
                                 <span className="text-slate-500 font-bold uppercase text-[10px] tracking-wider flex justify-between w-[90px]">Blood Group <span className="text-slate-400">:</span></span>
-                                <span className="font-bold text-red-600">O+</span> {/* Mocking blood group for aesthetic realism */}
+                                <span className="font-bold text-red-600">O+</span>
                             </div>
                             <div className="flex items-center justify-between text-sm border-b border-slate-100 pb-1">
                                 <span className="text-slate-500 font-bold uppercase text-[10px] tracking-wider flex justify-between w-[90px]">Validity <span className="text-slate-400">:</span></span>

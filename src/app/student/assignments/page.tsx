@@ -1,19 +1,80 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { DEMO_ASSIGNMENTS } from "@/lib/demo-data";
-import { BookOpen, Search, Upload, CheckCircle, Clock } from "lucide-react";
+import { BookOpen, Search, Upload, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
+import { getDemoData } from "@/lib/demo-data";
 
 export default function StudentAssignmentsPage() {
-    const [assignments, setAssignments] = useState(DEMO_ASSIGNMENTS);
+    const { userProfile } = useAuth();
+    const [assignments, setAssignments] = useState<any[]>(getDemoData(userProfile?.branch).assignments);
     const [search, setSearch] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSimulatedSubmit = (id: string) => {
-        setAssignments(prev => prev.map(a =>
-            a.id === id ? { ...a, status: "submitted" } : a
-        ));
+    useEffect(() => {
+        // Re-sync when branch loads (async auth)
+        setAssignments(getDemoData(userProfile?.branch).assignments);
+        if (!userProfile?.id) return;
+
+        const fetchAssignments = async () => {
+            try {
+                const res = await fetch(`/api/assignments?firebaseId=${userProfile.id}`);
+                const json = await res.json();
+                if (json.success && json.data.length > 0) {
+                    const mapped = json.data.map((a: any) => {
+                        const submission = a.submissions?.[0];
+                        return {
+                            id: a.id,
+                            title: a.title,
+                            subject: a.subject?.name || "Subject",
+                            dueDate: a.dueDate,
+                            faculty: a.faculty || "Faculty",
+                            status: submission ? submission.status : "pending",
+                            marks: submission?.marks
+                        };
+                    });
+                    setAssignments(mapped);
+                }
+                // else keep DEMO_ASSIGNMENTS
+            } catch (err) {
+                console.error("Failed to fetch assignments", err);
+                // keep DEMO_ASSIGNMENTS on error
+            }
+        };
+
+        fetchAssignments();
+    }, [userProfile?.id, userProfile?.branch]);
+
+    const handleSimulatedSubmit = async (id: string) => {
+        if (!userProfile?.id) return;
+        
+        try {
+            if (id.startsWith('assign-')) {
+                // Mock assignment - update local state directly
+                setAssignments(prev => prev.map(a =>
+                    a.id === id ? { ...a, status: "submitted" } : a
+                ));
+                return;
+            }
+
+            const res = await fetch('/api/assignments/submissions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ firebaseId: userProfile.id, assignmentId: id })
+            });
+            const json = await res.json();
+            if (json.success) {
+                setAssignments(prev => prev.map(a =>
+                    a.id === id ? { ...a, status: "submitted" } : a
+                ));
+            } else {
+                console.error("Submission failed:", json.error);
+            }
+        } catch (error) {
+            console.error("Submission error:", error);
+        }
     };
 
     const filtered = assignments.filter(a =>

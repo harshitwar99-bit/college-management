@@ -2,47 +2,99 @@
 
 import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { DEMO_ASSIGNMENTS } from "@/lib/demo-data";
 import { BookOpen, Plus, Search, Clock, UploadCloud } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { BulkUploadDialog } from "@/components/ui/BulkUploadDialog";
+import { useAuth } from "@/lib/auth-context";
+import { DEMO_ASSIGNMENTS } from "@/lib/demo-data";
+import { useEffect } from "react";
 
 export default function FacultyAssignmentsPage() {
-    const [assignments, setAssignments] = useState(DEMO_ASSIGNMENTS);
+    const { userProfile } = useAuth();
+    const [assignments, setAssignments] = useState<any[]>(DEMO_ASSIGNMENTS);
     const [title, setTitle] = useState("");
     const [subject, setSubject] = useState("Data Structures");
     const [date, setDate] = useState("");
     const [search, setSearch] = useState("");
     const [isUploadOpen, setIsUploadOpen] = useState(false);
 
-    const handleCreate = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!title || !date) return;
-
-        const newAssignment = {
-            id: `a-${Date.now()}`,
-            title,
-            subject,
-            dueDate: date,
-            status: "pending",
-            faculty: "Dr. Priya Mehta"
+    useEffect(() => {
+        if (!userProfile?.id) return;
+        const fetchAssignments = async () => {
+            try {
+                const res = await fetch(`/api/assignments?firebaseId=${userProfile.id}`);
+                const json = await res.json();
+                if (json.success && json.data.length > 0) {
+                    setAssignments(json.data);
+                }
+                // else keep DEMO_ASSIGNMENTS
+            } catch (err) {
+                console.error(err);
+                // keep DEMO_ASSIGNMENTS
+            }
         };
+        fetchAssignments();
+    }, [userProfile?.id]);
 
-        setAssignments(prev => [newAssignment, ...prev]);
-        setTitle("");
-        setDate("");
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!title || !date || !userProfile?.id) return;
+
+        try {
+            const res = await fetch('/api/assignments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    firebaseId: userProfile.id,
+                    title,
+                    subject,
+                    dueDate: date
+                })
+            });
+            const json = await res.json();
+            if (json.success) {
+                setAssignments(prev => [json.data, ...prev]);
+                setTitle("");
+                setDate("");
+            }
+        } catch (error) {
+            console.error(error);
+        }
     };
 
-    const handleBulkUpload = (data: any[]) => {
-        const newAssignments = data.map((row, i) => ({
-            id: `a-${Date.now()}-${i}`,
+    const handleBulkUpload = async (data: any[]) => {
+        if (!userProfile?.id) return;
+        
+        const newAssignmentsDecoded = data.map((row) => ({
             title: row.title || row.Title || "Untitled Assignment",
             subject: row.subject || row.Subject || "Unknown",
             dueDate: row.dueDate || row.DueDate || row.Date || new Date().toISOString().split('T')[0],
-            status: "pending",
-            faculty: "Dr. Priya Mehta"
         }));
-        setAssignments(prev => [...newAssignments, ...prev]);
+
+        try {
+            const promises = newAssignmentsDecoded.map(a => 
+                fetch('/api/assignments', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        firebaseId: userProfile.id,
+                        title: a.title,
+                        subject: a.subject,
+                        dueDate: a.dueDate
+                    })
+                }).then(r => r.json())
+            );
+
+            const results = await Promise.all(promises);
+            const successful = results.filter(r => r.success).map(r => r.data);
+            
+            if (successful.length > 0) {
+                setAssignments(prev => [...successful, ...prev]);
+            }
+            setIsUploadOpen(false);
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     const filtered = assignments.filter(a =>

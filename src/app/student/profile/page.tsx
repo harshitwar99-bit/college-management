@@ -3,15 +3,25 @@
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/lib/auth-context";
-import { DEMO_ATTENDANCE } from "@/lib/demo-data";
 import { getAttendanceColor } from "@/lib/utils";
 import { Phone, Mail, BookOpen, LayoutGrid, Hash, Calendar, LogOut, Edit2, Save } from "lucide-react";
+import { getDemoData } from "@/lib/demo-data";
 
 
 export default function StudentProfilePage() {
     const { userProfile, logout, loadUserProfile } = useAuth();
     const name = userProfile?.name || "Arjun Sharma";
-    const avg = Math.round(DEMO_ATTENDANCE.reduce((s, a) => s + a.percent, 0) / DEMO_ATTENDANCE.length);
+    const [avgAttendance, setAvgAttendance] = useState<number | string>("...");
+
+    // Compute CGPA and subjects count from branch-aware demo results
+    const branchResults = getDemoData(userProfile?.branch).results;
+    const computedCgpa = (() => {
+        const valid = branchResults.filter((r: {max:number}) => r.max > 0);
+        if (!valid.length) return "—";
+        const total = valid.reduce((s: number, r: {total:number;max:number}) => s + (r.total / r.max) * 10, 0);
+        return (total / valid.length).toFixed(1);
+    })();
+    const subjectsCount = branchResults.length;
 
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
@@ -27,6 +37,25 @@ export default function StudentProfilePage() {
                 name: userProfile.name || "Arjun Sharma",
                 phone: userProfile.phone || "",
             });
+            
+            // Fetch real attendance data, fall back to branch-specific demo
+            const demoAtt = getDemoData(userProfile?.branch).attendance;
+            const demoAvg = Math.round(demoAtt.reduce((s: number, a: {percent:number}) => s + a.percent, 0) / demoAtt.length);
+            if (userProfile.id) {
+                fetch(`/api/attendance?firebaseId=${userProfile.id}`)
+                    .then(res => res.json())
+                    .then(json => {
+                        if (json.success && json.data.length > 0) {
+                            const avgVal = Math.round(json.data.reduce((s: number, a: any) => s + a.percent, 0) / json.data.length);
+                            setAvgAttendance(avgVal);
+                        } else {
+                            setAvgAttendance(demoAvg);
+                        }
+                    })
+                    .catch(() => setAvgAttendance(demoAvg));
+            } else {
+                setAvgAttendance(demoAvg);
+            }
         }
     }, [userProfile]);
 
@@ -123,15 +152,17 @@ export default function StudentProfilePage() {
             {/* Stats row */}
             <div className="grid grid-cols-3 gap-3 mb-4 fade-in">
                 <div className="glass-card p-4 text-center">
-                    <p className={`text-2xl font-bold ${getAttendanceColor(avg)}`}>{avg}%</p>
+                    <p className={`text-2xl font-bold ${typeof avgAttendance === 'number' ? getAttendanceColor(avgAttendance) : 'text-slate-400'}`}>
+                        {avgAttendance}{typeof avgAttendance === 'number' ? '%' : ''}
+                    </p>
                     <p className="text-slate-400 text-xs mt-1">Attendance</p>
                 </div>
                 <div className="glass-card p-4 text-center">
-                    <p className="text-2xl font-bold text-purple-400">8.7</p>
+                    <p className="text-2xl font-bold text-purple-400">{computedCgpa}</p>
                     <p className="text-slate-400 text-xs mt-1">CGPA</p>
                 </div>
                 <div className="glass-card p-4 text-center">
-                    <p className="text-2xl font-bold text-amber-400">6</p>
+                    <p className="text-2xl font-bold text-amber-400">{subjectsCount}</p>
                     <p className="text-slate-400 text-xs mt-1">Subjects</p>
                 </div>
             </div>

@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
-import { DEMO_NOTICES } from "@/lib/demo-data";
+import { getDemoData } from "@/lib/demo-data";
 import { formatDate } from "@/lib/utils";
-import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { useAuth } from "@/lib/auth-context";
 import { Bell, BookOpen, Calendar, Star, Sun, Info } from "lucide-react";
 
 const TYPE_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string }> = {
@@ -16,44 +15,66 @@ const TYPE_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: 
     general: { icon: Info, color: "text-slate-400", bg: "bg-slate-700/30 border-slate-600/20" },
 };
 
+function NoticesSkeleton() {
+    return (
+        <div className="space-y-3 animate-pulse">
+            {[1, 2, 3, 4].map(i => (
+                <div key={i} className="border border-white/10 rounded-2xl p-4 bg-white/5">
+                    <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-white/10 flex-shrink-0" />
+                        <div className="flex-1 space-y-2">
+                            <div className="h-4 w-48 bg-white/10 rounded" />
+                            <div className="h-3 w-32 bg-white/10 rounded" />
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 export default function NoticesPage() {
-    const [notices, setNotices] = useState<typeof DEMO_NOTICES>(DEMO_NOTICES);
+    const { userProfile } = useAuth();
+    const [notices, setNotices] = useState<any[]>([]);
     const [expanded, setExpanded] = useState<string | null>(null);
     const [filter, setFilter] = useState("all");
-    const filters = ["all", "exam", "assignment", "event", "holiday", "general"];
+    const [isLoading, setIsLoading] = useState(true);
+    const filters = ["all", "exam", "assignment", "event", "general"];
 
     useEffect(() => {
-        try {
-            const q = query(collection(db, "notices"), orderBy("date", "desc"));
-            const unsubscribe = onSnapshot(q, (snapshot) => {
-                const fetchedNotices = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data(),
-                    date: doc.data().date?.toDate?.()?.toISOString() || new Date().toISOString()
-                })) as typeof DEMO_NOTICES;
-                if (fetchedNotices.length > 0) {
-                    setNotices(fetchedNotices);
-                } else {
-                    setNotices(DEMO_NOTICES);
-                }
-            }, (error) => {
-                console.warn("Firestore listener failed, using demo data fallback.", error);
-                setTimeout(() => setNotices(DEMO_NOTICES), 0);
-            });
+        const demoNotices = getDemoData(userProfile?.branch).notices;
+        setNotices(demoNotices);
+        setIsLoading(false);
 
-            return () => unsubscribe();
-        } catch {
-            console.warn("Firestore connection failed.");
-            setTimeout(() => setNotices(DEMO_NOTICES), 0);
-        }
-    }, []);
+        if (!userProfile?.id) return;
+        const fetchNotices = async () => {
+            setIsLoading(true);
+            try {
+                const res = await fetch(`/api/notices?firebaseId=${userProfile.id}`);
+                const json = await res.json();
+                if (json.success) {
+                    const mapped = json.data.map((n: any) => ({ ...n, type: n.type.toLowerCase() }));
+                    setNotices(mapped);
+                } else {
+                    setNotices(demoNotices);
+                }
+            } catch {
+                setNotices(demoNotices);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchNotices();
+    }, [userProfile?.id, userProfile?.branch]);
 
     const filtered = filter === "all" ? notices : notices.filter(n => n.type === filter);
 
     return (
         <DashboardLayout role="student" title="Notices">
             <div className="page-header">Notice Board</div>
-            <p className="page-subheader">{notices.length} announcements from college & faculty</p>
+            <p className="page-subheader">
+                {isLoading ? "Loading announcements..." : `${notices.length} announcements from college & faculty`}
+            </p>
 
             {/* Filter chips */}
             <div className="flex gap-2 mb-5 overflow-x-auto pb-1 fade-in">
@@ -66,51 +87,56 @@ export default function NoticesPage() {
                             : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
                             }`}
                     >
-                        {f === "all" ? `All (${notices.length})` : f}
+                        {f === "all" ? `All (${notices.length})` : f.charAt(0).toUpperCase() + f.slice(1)}
                     </button>
                 ))}
             </div>
 
+            {/* Loading Skeleton */}
+            {isLoading && <NoticesSkeleton />}
+
             {/* Notices */}
-            <div className="space-y-3 fade-in">
-                {filtered.map(notice => {
-                    const config = TYPE_CONFIG[notice.type] || TYPE_CONFIG.general;
-                    const isExpanded = expanded === notice.id;
-                    return (
-                        <div
-                            key={notice.id}
-                            className={`border rounded-2xl p-4 cursor-pointer transition-all duration-300 ${config.bg} hover:border-white/20`}
-                            onClick={() => setExpanded(isExpanded ? null : notice.id)}
-                        >
-                            <div className="flex items-start gap-3">
-                                <div className={`w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0 ${config.color}`}>
-                                    <config.icon className="w-4 h-4" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-white font-medium text-sm leading-snug">{notice.title}</p>
-                                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                                        <span>{notice.author}</span>
-                                        <span>·</span>
-                                        <span>{formatDate(notice.date)}</span>
-                                        <span className={`ml-auto capitalize ${config.color} font-medium`}>{notice.type}</span>
+            {!isLoading && (
+                <div className="space-y-3 fade-in">
+                    {filtered.map(notice => {
+                        const config = TYPE_CONFIG[notice.type] || TYPE_CONFIG.general;
+                        const isExpanded = expanded === notice.id;
+                        return (
+                            <div
+                                key={notice.id}
+                                className={`border rounded-2xl p-4 cursor-pointer transition-all duration-300 ${config.bg} hover:border-white/20`}
+                                onClick={() => setExpanded(isExpanded ? null : notice.id)}
+                            >
+                                <div className="flex items-start gap-3">
+                                    <div className={`w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0 ${config.color}`}>
+                                        <config.icon className="w-4 h-4" />
                                     </div>
-                                    {isExpanded && (
-                                        <p className="text-slate-300 text-sm mt-3 leading-relaxed border-t border-white/10 pt-3">
-                                            {notice.body}
-                                        </p>
-                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-white font-medium text-sm leading-snug">{notice.title}</p>
+                                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
+                                            <span>{notice.author}</span>
+                                            <span>·</span>
+                                            <span>{formatDate(notice.date)}</span>
+                                            <span className={`ml-auto capitalize ${config.color} font-medium`}>{notice.type}</span>
+                                        </div>
+                                        {isExpanded && (
+                                            <p className="text-slate-300 text-sm mt-3 leading-relaxed border-t border-white/10 pt-3">
+                                                {notice.body}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
+                        );
+                    })}
+                    {filtered.length === 0 && (
+                        <div className="glass-card p-10 text-center">
+                            <Bell className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                            <p className="text-slate-500">No notices in this category</p>
                         </div>
-                    );
-                })}
-                {filtered.length === 0 && (
-                    <div className="glass-card p-10 text-center">
-                        <Bell className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                        <p className="text-slate-500">No notices in this category</p>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+            )}
         </DashboardLayout>
     );
 }

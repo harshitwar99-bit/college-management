@@ -10,7 +10,7 @@ import {
     LayoutDashboard, ClipboardList, Calendar, Clock, FileText,
     MapPin, BarChart2, Bell, User, LogOut,
     Users, BookOpen, Award, ChevronRight, Menu, X, CalendarClock, CreditCard,
-    Sun, Moon, Sparkles, Contact, Library
+    Sun, Moon, Sparkles, Contact, Library, RefreshCcw, Settings
 } from "lucide-react";
 import { GlobalSearch } from "@/components/ui/GlobalSearch";
 import { EmailSyncModal } from "@/components/ui/EmailSyncModal";
@@ -43,6 +43,7 @@ const facultyLinks = [
     { href: "/faculty/leaves", label: "Leave Requests", icon: CalendarClock },
     { href: "/faculty/notices", label: "Post Notices", icon: Bell },
     { href: "/faculty/students", label: "Students", icon: Users },
+    { href: "/faculty/register-students", label: "Register Students", icon: RefreshCcw },
     { href: "/faculty/profile", label: "My Profile", icon: User },
 ];
 
@@ -53,6 +54,8 @@ const coordinatorLinks = [
     { href: "/coordinator/exams", label: "Exam Coordination", icon: FileText },
     { href: "/coordinator/leaves", label: "Leave Approvals", icon: CalendarClock },
     { href: "/coordinator/notices", label: "Notices", icon: Bell },
+    { href: "/coordinator/sync-rollno", label: "Sync Roll Numbers", icon: RefreshCcw },
+    { href: "/coordinator/settings", label: "Settings", icon: Settings },
     { href: "/coordinator/profile", label: "My Profile", icon: User },
 ];
 
@@ -146,7 +149,7 @@ export function Sidebar({ role, isHovered, setIsHovered, isMobileOpen, setIsMobi
                                 "transition-all duration-300 overflow-hidden whitespace-nowrap",
                                 (isHovered || isMobileOpen) ? "opacity-100 w-auto ml-3 flex-1" : "lg:opacity-0 lg:w-0 lg:ml-0 lg:flex-none opacity-100 w-auto ml-3 flex-1"
                             )}>
-                                <p className="text-base font-bold text-white tracking-wide">ITS</p>
+                                <p className="text-base font-bold tracking-wide glow-red">ITS</p>
                                 <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold mt-0.5">Management</p>
                             </div>
                         </div>
@@ -265,11 +268,8 @@ export function BottomNav({ role }: SidebarProps) {
         ] : [
             { href: "/coordinator/dashboard", label: "Home", icon: LayoutDashboard },
             { href: "/coordinator/users", label: "Users", icon: Users },
-            { href: "/coordinator/academic", label: "Academic", icon: BookOpen },
-            { href: "/coordinator/notices", label: "Notices", icon: Bell },
             { href: "/coordinator/exams", label: "Exams", icon: FileText },
-            { href: "/coordinator/results", label: "Results", icon: BarChart2 },
-            { href: "/coordinator/sync-rollno", label: "Sync Roll Nos", icon: FileText },
+            { href: "/coordinator/notices", label: "Notices", icon: Bell },
             { href: "/coordinator/profile", label: "Profile", icon: User },
         ];
 
