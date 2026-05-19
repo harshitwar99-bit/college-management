@@ -51,7 +51,7 @@ export default function StudentAssignmentsPage() {
         if (!userProfile?.id) return;
         
         try {
-            if (id.startsWith('assign-')) {
+            if (id.length < 10) { // Demo IDs are short (a1, ba1), real UUIDs are 36 chars
                 // Mock assignment - update local state directly
                 setAssignments(prev => prev.map(a =>
                     a.id === id ? { ...a, status: "submitted" } : a
